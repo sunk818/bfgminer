@@ -3103,20 +3103,27 @@ static struct opt_table opt_cmdline_table[] = {
 static bool jobj_binary(const json_t *obj, const char *key,
 			void *buf, size_t buflen, bool required)
 {
-	const char *hexstr;
+        const char *hexstr;
 	json_t *tmp;
-
+        
+        applog(LOG_DEBUG, "jobj_binary");
 	tmp = json_object_get(obj, key);
 	if (unlikely(!tmp)) {
 		if (unlikely(required))
 			applog(LOG_ERR, "JSON key '%s' not found", key);
+                applog(LOG_DEBUG, "unlikely tmp not found");
 		return false;
 	}
+        
 	hexstr = json_string_value(tmp);
+
 	if (unlikely(!hexstr)) {
 		applog(LOG_ERR, "JSON key '%s' is not a string", key);
 		return false;
 	}
+
+        applog(LOG_DEBUG, "pushing hex data into work buffer");
+
 	if (!hex2bin(buf, hexstr, buflen))
 		return false;
 
@@ -3478,12 +3485,14 @@ void refresh_bitcoind_address(struct mining_goal_info * const goal, const bool f
 
 static bool work_decode(struct pool *pool, struct work *work, json_t *val)
 {
+
 	json_t *res_val = json_object_get(val, "result");
 	json_t *tmp_val;
 	bool ret = false;
 	struct timeval tv_now;
 
 	if (unlikely(detect_algo == 1)) {
+            applog(LOG_WARNING, "detect algo?");
 		json_t *tmp = json_object_get(res_val, "algorithm");
 		const char *v = tmp ? json_string_value(tmp) : "";
 		if (strncasecmp(v, "scrypt", 6))
@@ -3494,6 +3503,7 @@ static bool work_decode(struct pool *pool, struct work *work, json_t *val)
 	
 	if (work->tr)
 	{
+		applog(LOG_DEBUG, "work->tr is true");
 		blktemplate_t * const tmpl = work->tr->tmpl;
 		const char *err = blktmpl_add_jansson(tmpl, res_val, tv_now.tv_sec);
 		if (err) {
@@ -3584,10 +3594,10 @@ static bool work_decode(struct pool *pool, struct work *work, json_t *val)
 			}
 		}
 #endif
-		if (blkmk_get_data(tmpl, work->data, 80, tv_now.tv_sec, NULL, &work->dataid) < 76)
+		if (blkmk_get_data(tmpl, work->data, 184, tv_now.tv_sec, NULL, &work->dataid) < 76)
 			return false;
-		swap32yes(work->data, work->data, 80 / 4);
-		memcpy(&work->data[80], workpadding_bin, 48);
+		swap32yes(work->data, work->data, 184 / 4);
+		memcpy(&work->data[181], workpadding_bin, 48);
 		
 		work->ntime_roll_limits = (struct ntime_roll_limits){
 			.min = tmpl->mintime,
@@ -3616,12 +3626,13 @@ static bool work_decode(struct pool *pool, struct work *work, json_t *val)
 	}
 	else
 	if (unlikely(!jobj_binary(res_val, "data", work->data, sizeof(work->data), true))) {
-		applog(LOG_ERR, "JSON inval data");
+		applog(LOG_ERR, "JSON inval dataaaaa");
 		return false;
 	}
-	else
-		work_set_simple_ntime_roll_limit(work, 0, &tv_now);
-
+	else {
+            applog(LOG_DEBUG, "roll limit?");
+            work_set_simple_ntime_roll_limit(work, 0, &tv_now);
+        }
 	if (!jobj_binary(res_val, "midstate", work->midstate, sizeof(work->midstate), false)) {
 		// Calculate it ourselves
 		applog(LOG_DEBUG, "Calculating midstate locally");
@@ -3634,6 +3645,8 @@ static bool work_decode(struct pool *pool, struct work *work, json_t *val)
 	}
 	if (work->tr)
 	{
+       		applog(LOG_WARNING, "work->tr is true");
+
 		for (size_t i = 0; i < sizeof(work->target) / 2; ++i)
 		{
 			int p = (sizeof(work->target) - 1) - i;
@@ -3655,8 +3668,10 @@ static bool work_decode(struct pool *pool, struct work *work, json_t *val)
 	work->tv_staged = tv_now;
 	
 #if BLKMAKER_VERSION > 6
+        applog(LOG_DEBUG, "am i here?");
 	if (work->tr)
 	{
+            applog(LOG_WARNING, "work->tr??");
 		blktemplate_t * const tmpl = work->tr->tmpl;
 		uint8_t buf[80];
 		int16_t expire;
@@ -3703,7 +3718,7 @@ static bool work_decode(struct pool *pool, struct work *work, json_t *val)
 	pool_set_opaque(pool, !work->tr);
 
 	ret = true;
-
+        applog(LOG_DEBUG, "returning true");
 	return ret;
 }
 
@@ -6095,6 +6110,8 @@ static enum pool_protocol pool_protocol_fallback(enum pool_protocol proto)
 
 static bool get_upstream_work(struct work *work, CURL *curl)
 {
+    applog(LOG_DEBUG, "get_upstream_work()");
+
 	struct pool *pool = work->pool;
 	struct cgminer_pool_stats *pool_stats = &(pool->cgminer_pool_stats);
 	struct timeval tv_elapsed;
@@ -6290,7 +6307,7 @@ void _bfg_clean_up(bool);
 
 void app_restart(void)
 {
-	applog(LOG_WARNING, "Attempting to restart %s", packagename);
+	applog(LOG_DEBUG, "Attempting to restart %s", packagename);
 
 	__kill_work();
 	_bfg_clean_up(true);
@@ -9836,7 +9853,7 @@ static bool pool_active(struct pool *pool, bool pinging)
 		goto out;
 	}
 	
-		applog(LOG_INFO, "Testing pool %s", pool->rpc_url);
+	applog(LOG_INFO, "Testing pool %s", pool->rpc_url);
 
 	/* This is the central point we activate stratum when we can */
 	curl = curl_easy_init();
@@ -9847,11 +9864,14 @@ static bool pool_active(struct pool *pool, bool pinging)
 
 	if (!(want_gbt || want_getwork))
 		goto nohttp;
+applog(LOG_INFO, "Making work");
 
 	work = make_work();
 
 	/* Probe for GBT support on first pass */
 	proto = want_gbt ? PLP_GETBLOCKTEMPLATE : PLP_GETWORK;
+        applog(LOG_INFO, "Curl initialized");
+
 
 tryagain:
 	rpc_req = prepare_rpc_req_probe(work, proto, NULL, pool);
@@ -9861,6 +9881,8 @@ tryagain:
 
 	pool->probed = false;
 	cgtime(&tv_getwork);
+        applog(LOG_WARNING, "making the call for work request...");
+
 	val = json_rpc_call(curl, pool->rpc_url, pool->rpc_userpass, rpc_req,
 			true, false, &rolltime, pool, false);
 	cgtime(&tv_getwork_reply);
@@ -9871,6 +9893,7 @@ tryagain:
 	 * and if so, switch to that in preference to getwork if it works */
 	if (pool->stratum_url && want_stratum && pool_may_redirect_to(pool, pool->stratum_url) && (pool->has_stratum || stratum_works(pool))) {
 		if (!pool->has_stratum) {
+
 
 		applog(LOG_NOTICE, "Switching pool %d %s to %s", pool->pool_no, pool->rpc_url, pool->stratum_url);
 		if (!pool->rpc_url)
@@ -9913,6 +9936,7 @@ retry_stratum:
 		shutdown_stratum(pool);
 
 	if (val) {
+
 		bool rc;
 		json_t *res;
 
@@ -9921,7 +9945,9 @@ retry_stratum:
 			goto badwork;
 
 		work->rolltime = rolltime;
+                applog(LOG_WARNING,"Attempting to decode work");
 		rc = work_decode(pool, work, val);
+                applog(LOG_DEBUG, "Decoded work: %d", rc);
 		if (rc) {
 			applog(LOG_DEBUG, "Successfully retrieved and deciphered work from pool %u %s",
 			       pool->pool_no, pool->rpc_url);
@@ -10664,13 +10690,16 @@ bool test_hash(const void * const phash, const float diff)
 
 enum test_nonce2_result _test_nonce2(struct work *work, uint32_t nonce, bool checktarget)
 {
+    applog(LOG_DEBUG, "test_nonce2_result");
 	uint32_t *work_nonce = (uint32_t *)(work->data + 64 + 12);
 	*work_nonce = htole32(nonce);
 
 	work_hash(work);
 	
-	if (!test_hash(work->hash, work->nonce_diff))
-		return TNR_BAD;
+	if (!test_hash(work->hash, work->nonce_diff)){
+            applog(LOG_WARNING, "not good enough");
+            return TNR_BAD;
+        }
 	
 	if (checktarget && !hash_target_check_v(work->hash, work->target))
 	{
@@ -10710,6 +10739,7 @@ bool submit_nonce(struct thr_info *thr, struct work *work, uint32_t nonce)
 bool submit_noffset_nonce(struct thr_info *thr, struct work *work_in, uint32_t nonce,
 			  int noffset)
 {
+    applog(LOG_DEBUG, "submit_noffset_nonce");
 	struct work *work = make_work();
 	_copy_work(work, work_in, noffset);
 	

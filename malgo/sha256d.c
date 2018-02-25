@@ -22,13 +22,16 @@
 static
 void hash_data(void *out_hash, const void *data)
 {
-	unsigned char blkheader[80];
+	unsigned char blkheader[184];
 	
 	// data is past the first SHA256 step (padding and interpreting as big endian on a little endian platform), so we need to flip each 32-bit chunk around to get the original input block header
-	swap32yes(blkheader, data, 80 / 4);
+	swap32yes(blkheader, data, 184 / 4);
 	
 	// double-SHA256 to get the block hash
-	gen_hash(blkheader, out_hash, 80);
+	gen_hash(blkheader, out_hash, 181);
+        char out[200];
+        bin2hex(out, out_hash, 32);
+        applog(LOG_WARNING, "hash: %s", out);
 }
 
 #ifdef USE_OPENCL
@@ -72,8 +75,8 @@ char *opencl_get_default_kernel_file_sha256d(const struct mining_algorithm * con
 	/* Detect all 7970s, older ATI and NVIDIA and use poclbm */
 	if (strstr(cgpu->name, "Tahiti") || !clState->hasBitAlign)
 	{
-		applog(LOG_INFO, "Selecting poclbm kernel");
-		return strdup("poclbm");
+		applog(LOG_INFO, "Selecting JOHN kernel");
+		return strdup("john");
 	}
 	
 	/* Use phatk for the rest R5xxx R6xxx */

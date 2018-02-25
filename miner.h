@@ -384,7 +384,7 @@ enum dev_enable {
 enum cl_kernels {
 	KL_NONE,
 #ifdef USE_SHA256D
-	KL_POCLBM,
+	KL_JOHN,
 	KL_PHATK,
 	KL_DIAKGCN,
 	KL_DIABLO,
@@ -1471,7 +1471,7 @@ typedef unsigned work_device_id_t;
 #define PRIwdi "04x"
 
 struct work {
-	unsigned char	data[128];
+	unsigned char	data[189];
 	unsigned char	midstate[32];
 	unsigned char	target[32];
 	unsigned char	hash[32];

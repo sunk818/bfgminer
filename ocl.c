@@ -216,6 +216,7 @@ int opt_platform_id = -1;
 
 FILE *opencl_open_kernel(const char * const filename)
 {
+    applog(LOG_WARNING, "opencl_open_kernel");
 	char *fullpath = alloca(PATH_MAX);
 	FILE *f;
 
@@ -231,11 +232,14 @@ FILE *opencl_open_kernel(const char * const filename)
 	if (!f)
 		f = fopen(filename, "rb");
 	
+        if (!f) 
+            applog(LOG_WARNING, "couldn't open file!");
 	return f;
 }
 
 char *file_contents(const char *filename, int *length)
 {
+    applog(LOG_WARNING, "file_contents");
 	void *buffer;
 	FILE *f;
 
@@ -278,6 +282,7 @@ void extract_word(char * const buf, const size_t bufsz, const char ** const endp
 
 char *opencl_kernel_source(const char * const filename, int * const out_sourcelen, enum cl_kernels * const out_kinterface, struct mining_algorithm ** const out_malgo)
 {
+    applog(LOG_WARNING, "opencl_kernel_source");
 	char *source = file_contents(filename, out_sourcelen);
 	if (!source)
 		return NULL;
@@ -462,6 +467,7 @@ void patch_opcodes(char *w, unsigned remaining)
 
 _clState *opencl_create_clState(unsigned int gpu, char *name, size_t nameSize)
 {
+    // looks like this is how we find opencl HTMLCOIN = REALLY GOOD
 	_clState *clState = calloc(1, sizeof(_clState));
 	struct cgpu_info *cgpu = &gpus[gpu];
 	struct opencl_device_data * const data = cgpu->device_data;
@@ -786,7 +792,7 @@ bool opencl_should_patch_bfi_int(struct cgpu_info * const cgpu, _clState * const
 	
 	switch (kernelinfo->interface)
 	{
-		case KL_DIABLO: case KL_DIAKGCN: case KL_PHATK: case KL_POCLBM:
+		case KL_DIABLO: case KL_DIAKGCN: case KL_PHATK: case KL_JOHN:
 			// Okay, these actually use BFI_INT hacking
 			break;
 		default:

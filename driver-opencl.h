@@ -109,6 +109,10 @@ struct opencl_work_data {
 	cl_uint B1addK6, PreVal0addK7, W16addK16, W17addK17;
 	cl_uint zeroA, zeroB;
 	cl_uint oneA, twoA, threeA, fourA, fiveA, sixA, sevenA;
+        
+        cl_uint state0, state1, state2, state3, state4, state5, state6, state7;
+        cl_uint markend, time, target, html1, html2, html3, html4, html5, html6, html7, html8;
+        cl_uint html9, html10, html11, html12, html13, html14, html15, html16;
 };
 #endif
 

@@ -1019,31 +1019,47 @@ struct opencl_work_data *_opencl_work_data(struct work * const work)
 	}
 	return work->device_data;
 }
-
+// called by line 1826
 static
 cl_int queue_poclbm_kernel(const struct opencl_kernel_info * const kinfo, _clState * const clState, struct work * const work, const cl_uint threads)
-{
+{// HTMLCOIN
+    //applog(LOG_DEBUG, "queue_poclbm_kernel");
+    //applog(LOG_DEBUG, "worksize %lu" , sizeof(*work));
 	struct opencl_work_data * const blk = _opencl_work_data(work);
 	const cl_kernel * const kernel = &kinfo->kernel;
 	unsigned int num = 0;
 	cl_int status = 0;
 
-	CL_SET_BLKARG(ctx_a);
-	CL_SET_BLKARG(ctx_b);
-	CL_SET_BLKARG(ctx_c);
-	CL_SET_BLKARG(ctx_d);
-	CL_SET_BLKARG(ctx_e);
-	CL_SET_BLKARG(ctx_f);
-	CL_SET_BLKARG(ctx_g);
-	CL_SET_BLKARG(ctx_h);
+	CL_SET_BLKARG(state0);
+	CL_SET_BLKARG(state1);
+	CL_SET_BLKARG(state2);
+	CL_SET_BLKARG(state3);
+	CL_SET_BLKARG(state4);
+	CL_SET_BLKARG(state5);
+	CL_SET_BLKARG(state6);
+	CL_SET_BLKARG(state7);
 
-	CL_SET_BLKARG(cty_b);
-	CL_SET_BLKARG(cty_c);
+	CL_SET_BLKARG(markend);
+	CL_SET_BLKARG(time);
 
 	
-	CL_SET_BLKARG(cty_f);
-	CL_SET_BLKARG(cty_g);
-	CL_SET_BLKARG(cty_h);
+	CL_SET_BLKARG(target);
+	CL_SET_BLKARG(html1);
+	CL_SET_BLKARG(html2);
+	CL_SET_BLKARG(html3);
+	CL_SET_BLKARG(html4);
+	CL_SET_BLKARG(html5);
+	CL_SET_BLKARG(html6);
+	CL_SET_BLKARG(html7);
+	CL_SET_BLKARG(html8);
+	CL_SET_BLKARG(html9);
+	CL_SET_BLKARG(html10);
+	CL_SET_BLKARG(html11);
+	CL_SET_BLKARG(html12);
+	CL_SET_BLKARG(html13);
+	CL_SET_BLKARG(html14);
+	CL_SET_BLKARG(html15);
+	CL_SET_BLKARG(html16);
 
 	if (!kinfo->goffset)
 	{
@@ -1051,25 +1067,27 @@ cl_int queue_poclbm_kernel(const struct opencl_kernel_info * const kinfo, _clSta
 		uint *nonces = alloca(sizeof(uint) * vwidth);
 		unsigned int i;
 
-		for (i = 0; i < vwidth; i++)
-			nonces[i] = work->blk.nonce + (i * threads);
+		for (i = 0; i < vwidth; i++) {
+//                    applog(LOG_WARNING, "nonce: %u: vwidth: %u, threads: %u", work->blk.nonce, vwidth, threads);
+                    nonces[i] = work->blk.nonce + (i * threads);
+                }
 		CL_SET_VARG(vwidth, nonces);
 	}
 
-	CL_SET_BLKARG(fW0);
-	CL_SET_BLKARG(fW1);
-	CL_SET_BLKARG(fW2);
-	CL_SET_BLKARG(fW3);
-	CL_SET_BLKARG(fW15);
-	CL_SET_BLKARG(fW01r);
-
-	CL_SET_BLKARG(D1A);
-	CL_SET_BLKARG(C1addK5);
-	CL_SET_BLKARG(B1addK6);
-	CL_SET_BLKARG(W16addK16);
-	CL_SET_BLKARG(W17addK17);
-	CL_SET_BLKARG(PreVal4addT1);
-	CL_SET_BLKARG(PreVal0);
+//	CL_SET_BLKARG(fW0);
+//	CL_SET_BLKARG(fW1);
+//	CL_SET_BLKARG(fW2);
+//	CL_SET_BLKARG(fW3);
+//	CL_SET_BLKARG(fW15);
+//	CL_SET_BLKARG(fW01r);
+//
+//	CL_SET_BLKARG(D1A);
+//	CL_SET_BLKARG(C1addK5);
+//	CL_SET_BLKARG(B1addK6);
+//	CL_SET_BLKARG(W16addK16);
+//	CL_SET_BLKARG(W17addK17);
+//	CL_SET_BLKARG(PreVal4addT1);
+//	CL_SET_BLKARG(PreVal0);
 
 	CL_SET_ARG(clState->outputBuffer);
 
@@ -1303,7 +1321,7 @@ static
 struct opencl_kernel_interface kernel_interfaces[] = {
 	{NULL},
 #ifdef USE_SHA256D
-	{"poclbm",  queue_poclbm_kernel },
+	{"john",  queue_poclbm_kernel },
 	{"phatk",   queue_phatk_kernel  },
 	{"diakgcn", queue_diakgcn_kernel},
 	{"diablo",  queue_diablo_kernel },
@@ -1754,9 +1772,10 @@ const struct opencl_kernel_info *opencl_scanhash_get_kernel(struct cgpu_info * c
 	return kernelinfo;
 }
 
-static int64_t opencl_scanhash(struct thr_info *thr, struct work *work,
+static int64_t opencl_scanhash(struct thr_info *thr, struct work *work, // HTMLCOIN!
 				int64_t __maybe_unused max_nonce)
 {
+    applog(LOG_DEBUG, "opencl_scanhash");
 	const int thr_id = thr->id;
 	struct opencl_thread_data *thrdata = thr->cgpu_data;
 	struct cgpu_info *gpu = thr->cgpu;
@@ -1818,7 +1837,7 @@ static int64_t opencl_scanhash(struct thr_info *thr, struct work *work,
 	if (hashes > gpu->max_hashes)
 		gpu->max_hashes = hashes;
 
-	status = kinfo->queue_kernel_parameters(kinfo, clState, work, globalThreads[0]);
+	status = kinfo->queue_kernel_parameters(kinfo, clState, work, globalThreads[0]); // this calls queue_poclbm_kernel HTMLCOIN
 	if (unlikely(status != CL_SUCCESS)) {
 		applog(LOG_ERR, "Error: clSetKernelArg of all params failed.");
 		return -1;
@@ -1863,7 +1882,7 @@ static int64_t opencl_scanhash(struct thr_info *thr, struct work *work,
 			applog(LOG_ERR, "Error: clEnqueueWriteBuffer failed.");
 			return -1;
 		}
-		applog(LOG_DEBUG, "GPU %d found something?", gpu->device_id);
+		applog(LOG_WARNING, "GPU %d found something?", gpu->device_id);
 		postcalc_hash_async(thr, work, thrdata->res, kinfo->interface);
 		memset(thrdata->res, 0, buffersize);
 		/* This finish flushes the writebuffer set with CL_FALSE in clEnqueueWriteBuffer */
