@@ -1471,7 +1471,7 @@ typedef unsigned work_device_id_t;
 #define PRIwdi "04x"
 
 struct work {
-	unsigned char	data[189];
+	unsigned char	data[192];
 	unsigned char	midstate[32];
 	unsigned char	target[32];
 	unsigned char	hash[32];
