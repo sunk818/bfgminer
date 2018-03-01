@@ -1775,7 +1775,7 @@ const struct opencl_kernel_info *opencl_scanhash_get_kernel(struct cgpu_info * c
 static int64_t opencl_scanhash(struct thr_info *thr, struct work *work, // HTMLCOIN!
 				int64_t __maybe_unused max_nonce)
 {
-    applog(LOG_DEBUG, "opencl_scanhash");
+   
 	const int thr_id = thr->id;
 	struct opencl_thread_data *thrdata = thr->cgpu_data;
 	struct cgpu_info *gpu = thr->cgpu;
