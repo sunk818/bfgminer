@@ -54,7 +54,10 @@ __constant uint initH[8] = {
 #define g Vals[6]
 #define h Vals[7]
 
-__kernel void search(
+__kernel 
+__attribute__((vec_type_hint(u)))
+__attribute__((reqd_work_group_size(WORKSIZE, 1, 1)))
+void search(
    const uint state0, //H1 - a
    const uint state1, //H2 - b
    const uint state2, //H3 - c
