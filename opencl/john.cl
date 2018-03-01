@@ -1,7 +1,13 @@
 
 // kernel-interface: john SHA256d
 
-typedef uint u;
+#ifdef VECTORS4
+	typedef uint4 u;
+#elif defined VECTORS2
+	typedef uint2 u;
+#else
+	typedef uint u;
+#endif
 
 __constant uint K[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -86,12 +92,18 @@ __kernel void search(
    // 32 bits of 00800000
    // 32 bits of 0
    // 32 bits of 000005A8
-
+#ifndef GOFFSET
    const u base,
+#endif
    volatile __global uint * output)
 
 {
-    const u nonce = base + (uint)(get_global_id(0));
+#ifdef GOFFSET
+	const u nonce = (uint)(get_global_id(0));
+#else
+	const u nonce = base + (uint)(get_global_id(0));
+#endif
+
     u Vals[8];
     u Last[8];
     u W[64];
@@ -233,8 +245,27 @@ __kernel void search(
 
     #define FOUND (0x0F)
     #define SETFOUND(Xnonce) output[atomic_inc(&output[FOUND])] = Xnonce
-    if (h==0) { // 32 zeros at least
+
+    #if defined(VECTORS2)||defined(VECTORS4)
+    if (any(h==0)) { // 32 zeros at least
+    	if (h.x==0)
+		SETFOUND(nonce.x);
+	if (h.y==0)
+		SETFOUND(nonce.y);
+    #if defined(VECTORS4)
+    	if (h.z==0)
+		SETFOUND(nonce.z);
+	if(h.w ==0)
+		SETFOUND(nonce.w);
+
+    #endif
+    }
+
+    #else
+        if (h==0) { // 32 zeros at least
         SETFOUND(nonce);
     }
+
+    #endif
 
 }
