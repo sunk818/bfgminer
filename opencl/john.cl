@@ -247,7 +247,7 @@ void search(
     h+=initH[7];
 
     #define FOUND (0x0F)
-    #define SETFOUND(Xnonce) output[atomic_inc(&output[FOUND])] = Xnonce
+    #define SETFOUND(Xnonce) output[output[FOUND]++] = Xnonce
 
     #if defined(VECTORS2)||defined(VECTORS4)
     if (any(h==0)) { // 32 zeros at least
