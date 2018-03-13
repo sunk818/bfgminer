@@ -1,12 +1,11 @@
-
 // kernel-interface: john SHA256d
 
 #ifdef VECTORS4
-	typedef uint4 u;
+    typedef uint4 u;
 #elif defined VECTORS2
-	typedef uint2 u;
+    typedef uint2 u;
 #else
-	typedef uint u;
+    typedef uint u;
 #endif
 
 __constant uint K[64] = {
@@ -24,20 +23,20 @@ __constant uint initH[8] = {
 };
 
 #ifdef BITALIGN
-	#pragma OPENCL EXTENSION cl_amd_media_ops : enable
-	#define rotr(x, y) amd_bitalign((u)x, (u)x, (u)y)
+    #pragma OPENCL EXTENSION cl_amd_media_ops : enable
+    #define rotr(x, y) amd_bitalign((u)x, (u)x, (u)y)
 #else // BITALIGN
-	#define rotr(x, y) rotate((u)x, (u)(32 - y))
+    #define rotr(x, y) rotate((u)x, (u)(32 - y))
 #endif
 
 #ifdef BFI_INT
-	#define ch(x, y, z) amd_bytealign(x, y, z)
-	#define Ma(x, y, z) amd_bytealign( (z^x), (y), (x) )
-	#define Ma2(x, y, z) bitselect((u)x, (u)y, (u)z ^ (u)x)
+    #define ch(x, y, z) amd_bytealign(x, y, z)
+    #define Ma(x, y, z) amd_bytealign( (z^x), (y), (x) )
+    #define Ma2(x, y, z) bitselect((u)x, (u)y, (u)z ^ (u)x)
 #else // BFI_INT
-	#define ch(x, y, z) bitselect((u)z, (u)y, (u)x)
-	#define Ma(x, y, z) bitselect((u)x, (u)y, (u)z ^ (u)x)
-	#define Ma2(x, y, z) Ma(x, y, z)
+    #define ch(x, y, z) bitselect((u)z, (u)y, (u)x)
+    #define Ma(x, y, z) bitselect((u)x, (u)y, (u)z ^ (u)x)
+    #define Ma2(x, y, z) Ma(x, y, z)
 #endif
 
 #define E0(x) (rotr(x,2)^rotr(x,13)^rotr(x,22))
@@ -54,10 +53,7 @@ __constant uint initH[8] = {
 #define g Vals[6]
 #define h Vals[7]
 
-__kernel 
-__attribute__((vec_type_hint(u)))
-__attribute__((reqd_work_group_size(WORKSIZE, 1, 1)))
-void search(
+__kernel void search(
    const uint state0, //H1 - a
    const uint state1, //H2 - b
    const uint state2, //H3 - c
@@ -102,9 +98,9 @@ void search(
 
 {
 #ifdef GOFFSET
-	const u nonce = (uint)(get_global_id(0));
+    const u nonce = (uint)(get_global_id(0));
 #else
-	const u nonce = base + (uint)(get_global_id(0));
+    const u nonce = base + (uint)(get_global_id(0));
 #endif
 
     u Vals[8];
@@ -138,11 +134,9 @@ void search(
     W[13]=html10;
     W[14]=html11;
     W[15]=html12;
+#pragma unroll 
 
-    for (int j = 0; j < 64; j++) {
-        if (j>=16) {
-            W[j] = O1(W[j-2]) + W[j-7] + O0(W[j-15]) + W[j-16];
-        }
+    for (int j = 0; j < 16; j++) {
         t1 = h + E1(e) + ch(e,f,g) + K[j] + W[j];
         t2 = E0(a) + Ma(a,b,c);
         h=g;
@@ -154,6 +148,24 @@ void search(
         b=a;
         a=t1+t2;
     }
+#pragma unroll 
+for (int j = 16; j < 64; j++) {
+        W[j] = O1(W[j-2]) + W[j-7] + O0(W[j-15]) + W[j-16];
+        t1 = h + E1(e) + ch(e,f,g) + K[j] + W[j];
+        t2 = E0(a) + Ma(a,b,c);
+        h=g;
+        g=f;
+        f=e;
+        e=d+t1;
+        d=c;
+        c=b;
+        b=a;
+        a=t1+t2;
+    }
+
+
+
+
     Last[0]=a+=state0;
     Last[1]=b+=state1;
     Last[2]=c+=state2;
@@ -179,13 +191,24 @@ void search(
     W[13]=0x00800000;
     W[14]=0x00000000;
     W[15]=0x000005A8;
-
-    for (int j = 0; j < 64; j++) {
-        if (j>=16) {
-            W[j] = O1(W[j-2]) + W[j-7] + O0(W[j-15]) + W[j-16];
-        }
+#pragma unroll 
+    for (int j = 0; j < 16; j++) {
         t1 = h + E1(e) + ch(e,f,g) + K[j] + W[j];
-        t2 = E0(a)+Ma(a,b,c);
+        t2 = E0(a) + Ma(a,b,c);
+        h=g;
+        g=f;
+        f=e;
+        e=d+t1;
+        d=c;
+        c=b;
+        b=a;
+        a=t1+t2;
+    }
+#pragma unroll 
+for (int j = 16; j < 64; j++) {
+        W[j] = O1(W[j-2]) + W[j-7] + O0(W[j-15]) + W[j-16];
+        t1 = h + E1(e) + ch(e,f,g) + K[j] + W[j];
+        t2 = E0(a) + Ma(a,b,c);
         h=g;
         g=f;
         f=e;
@@ -221,13 +244,24 @@ void search(
     f=initH[5];
     g=initH[6];
     h=initH[7];
-
-    for (int j = 0; j < 64; j++) {
-        if (j>=16) {
-            W[j] = O1(W[j-2]) + W[j-7] + O0(W[j-15]) + W[j-16];
-        }
+#pragma unroll 
+    for (int j = 0; j < 16; j++) {
         t1 = h + E1(e) + ch(e,f,g) + K[j] + W[j];
-        t2 = E0(a)+Ma(a,b,c);
+        t2 = E0(a) + Ma(a,b,c);
+        h=g;
+        g=f;
+        f=e;
+        e=d+t1;
+        d=c;
+        c=b;
+        b=a;
+        a=t1+t2;
+    }
+#pragma unroll 
+for (int j = 16; j < 64; j++) {
+        W[j] = O1(W[j-2]) + W[j-7] + O0(W[j-15]) + W[j-16];
+        t1 = h + E1(e) + ch(e,f,g) + K[j] + W[j];
+        t2 = E0(a) + Ma(a,b,c);
         h=g;
         g=f;
         f=e;
@@ -247,19 +281,19 @@ void search(
     h+=initH[7];
 
     #define FOUND (0x0F)
-    #define SETFOUND(Xnonce) output[output[FOUND]++] = Xnonce
+    #define SETFOUND(Xnonce) output[atomic_inc(&output[FOUND])] = Xnonce
 
     #if defined(VECTORS2)||defined(VECTORS4)
     if (any(h==0)) { // 32 zeros at least
-    	if (h.x==0)
-		SETFOUND(nonce.x);
-	if (h.y==0)
-		SETFOUND(nonce.y);
+        if (h.x==0)
+        SETFOUND(nonce.x);
+    if (h.y==0)
+        SETFOUND(nonce.y);
     #if defined(VECTORS4)
-    	if (h.z==0)
-		SETFOUND(nonce.z);
-	if(h.w ==0)
-		SETFOUND(nonce.w);
+        if (h.z==0)
+        SETFOUND(nonce.z);
+    if(h.w ==0)
+        SETFOUND(nonce.w);
 
     #endif
     }
